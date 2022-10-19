@@ -1,95 +1,6 @@
-
-
-# Basic
-
-## Code optimization
-
-In the following code, getting the settings is useless. And I don't see an obvious reason to notify the user and the admin sequentially and not in parallel.
-
-```javascript
-connectToDatabase()
-.then((database)  => {
-    return getUser(database, 'email@email.com')
-    .then(user => {
-        return getUserSettings(database, user.id)
-        .then(settings => {
-            return setRole(database, user.id, "ADMIN")
-            .then(success => {
-                return notifyUser(user.id, "USER_ROLE_UPDATED")
-                .then(success => {
-                    return notifyAdmins("USER_ROLE_UPDATED")
-                })
-            })
-        })
-    })
-})
-```
-
-We can remove it without impacting any behaviour, and parallelize the notifications:
-
-```javascript
-connectToDatabase()
-.then((database)  => {
-    return getUser(database, 'email@email.com')
-    .then(user => {
-        return setRole(database, user.id, "ADMIN")
-            .then(success => (
-                Promise.all([
-                    notifyUser(user.id, "USER_ROLE_UPDATED"),
-                    notifyAdmins("USER_ROLE_UPDATED")
-                ])
-            ))
-    })
-})
-```
-
-Another optimization would be to send the notifications in an "eventual consistency" way. Some assumptions would drive the use of this approach:
- - high throughput is needed
- - backend infrastructure is reliable
- - a failure in the admin role change statement do not compromises the security of the whole system 
-
-```javascript
-connectToDatabase()
-.then((database)  => {
-    return getUser(database, 'email@email.com')
-    .then(user => (
-        Promise.all([
-                setRole(database, user.id, "ADMIN"),
-                notifyUser(user.id, "USER_ROLE_UPDATED"),
-                notifyAdmins("USER_ROLE_UPDATED")
-            ])
-    ))
-})
-```
-
-And finally using _async/await_ syntax it becomes:
-
-```javascript
-const database = await connectToDatabase()
-const user = await getUser(database, 'email@email.com')
-return Promise.all([
-                setRole(database, user.id, "ADMIN"),
-                notifyUser(user.id, "USER_ROLE_UPDATED"),
-                notifyAdmins("USER_ROLE_UPDATED")
-            ])
-```
-
-
 # DAI token tracker app
 
 Here is a React app used to display n last transactions occuring on the DAI smart contract in ethereum blockchain.
-
-When opened, a fetch is made to get n last events of the DAI contract.
-
-To get these events, I iterate on DAI past events while filtering by the last ethereum blocks (2 by 2). I check the transactions of the fetched blocks to see if it contains transactions related to the DAI contract. Found transactions are added to a list until the list size max is reached (100 in our context but it is configurable).
-
-The list is formatted, and we grab the timestamp from the block of the transaction (It looks like there are no way to avoid this API call with current version of web3).
-
-Then I start a websocket which is listening on the ethereum events. I filter events to get the transactions that are related to DAI.
-
-Two input fields are available to filter the list by sender or recipient addresses. These filters are applied for the major load but also for the web sockets.
-
-A sort mecanism is also in place, and controlable by the user.
 
 N.B I named it "DAI DAI" as it is a french expression used to ask for speed like "go go !!"
 
@@ -123,14 +34,13 @@ Concerning the filters, there is a parent (main screen) and a child component (l
 
 ## Getting Started
 
+Clone, then in .env file enter an infura key
+
 First, run the development server:
 
 ```bash
-npm run dev
-# or
 yarn dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-The .env file contains my infura key. Feel free to change it if needed.
