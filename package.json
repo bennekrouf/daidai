@@ -24,7 +24,7 @@
     "react-redux": "^8.0.2",
     "underscore": "^1.13.4",
     "web3": "^1.8.0",
-    "web3-eth": "^1.8.0",
+    "web3-eth": "^1.10.3",
     "web3-utils": "^1.8.0"
   },
   "devDependencies": {
